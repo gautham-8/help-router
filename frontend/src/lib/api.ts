@@ -12,7 +12,23 @@ export class ApiError extends Error {
   }
 }
 
+// Base URL of the backend. In dev/phone mode this is empty, so requests stay
+// same-origin and the Vite proxy forwards them to localhost:8000. For a deployed
+// static build, set VITE_API_BASE (e.g. https://help-router-backend.onrender.com) at
+// build time and every REST + WebSocket call targets that host instead.
+const API_BASE = (import.meta.env.VITE_API_BASE ?? "").replace(/\/$/, "");
+
+function apiUrl(path: string): string {
+  return `${API_BASE}${path}`;
+}
+
 function wsUrl(path: string): string {
+  if (API_BASE) {
+    // Derive ws(s):// from the configured backend origin.
+    const base = new URL(API_BASE);
+    const proto = base.protocol === "https:" ? "wss" : "ws";
+    return `${proto}://${base.host}${path}`;
+  }
   const proto = window.location.protocol === "https:" ? "wss" : "ws";
   return `${proto}://${window.location.host}${path}`;
 }
@@ -39,7 +55,7 @@ async function ensureOk(res: Response, fallback: string): Promise<Response> {
 }
 
 export async function fetchScenarios(): Promise<ScenarioInfo[]> {
-  const res = await ensureOk(await fetch("/scenarios"), "Failed to load scenarios");
+  const res = await ensureOk(await fetch(apiUrl("/scenarios")), "Failed to load scenarios");
   return res.json();
 }
 
@@ -54,7 +70,7 @@ export async function createReport(
   input: CreateReportInput,
 ): Promise<{ id: string; demo_safety: string }> {
   const res = await ensureOk(
-    await fetch("/reports", {
+    await fetch(apiUrl("/reports"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -66,7 +82,7 @@ export async function createReport(
 
 export async function fetchQueue(service: QueueName, token = ""): Promise<QueueEntryView[]> {
   const res = await ensureOk(
-    await fetch(`/queues/${service}`, { headers: tokenHeaders(token) }),
+    await fetch(apiUrl(`/queues/${service}`), { headers: tokenHeaders(token) }),
     `Failed to load the ${service} queue`,
   );
   return res.json();
@@ -81,7 +97,7 @@ async function decide(
 ): Promise<void> {
   const url = `/reports/${encodeURIComponent(reportId)}/${service}/${action}?responder=${encodeURIComponent(responder)}`;
   await ensureOk(
-    await fetch(url, { method: "POST", headers: tokenHeaders(token) }),
+    await fetch(apiUrl(url), { method: "POST", headers: tokenHeaders(token) }),
     `Could not ${action} this dispatch`,
   );
 }
@@ -113,7 +129,7 @@ export async function assignFromTriage(
 ): Promise<void> {
   const url = `/reports/${encodeURIComponent(reportId)}/triage/assign?service=${service}&responder=${encodeURIComponent(responder)}`;
   await ensureOk(
-    await fetch(url, { method: "POST", headers: tokenHeaders(token) }),
+    await fetch(apiUrl(url), { method: "POST", headers: tokenHeaders(token) }),
     "Could not send this report to that service",
   );
 }

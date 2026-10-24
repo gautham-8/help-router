@@ -3,7 +3,7 @@
 ## Top-level layout
 
 ```
-hackachusetts-2026/
+help-router/
 ├── .kiro/
 │   ├── specs/                      # One folder per feature (spec-driven dev)
 │   │   └── <feature-name>/

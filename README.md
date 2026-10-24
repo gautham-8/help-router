@@ -54,8 +54,8 @@ human confirms every dispatch, and why anything unclear goes to triage.
 
 ### Installation
 ```bash
-git clone https://github.com/gautham-8/hackachusetts-2026.git
-cd hackachusetts-2026
+git clone https://github.com/gautham-8/help-router.git
+cd help-router
 
 # Config (optional; the defaults already work). Read from the repo root.
 cp .env.example .env
@@ -129,12 +129,12 @@ includes running the real YAMNet model on generated audio.
 
 ## Project Structure
 ```
-hackachusetts-2026/
+help-router/
 ├── .kiro/
 │   ├── specs/help-capture-and-routing/   # requirements.md, design.md, tasks.md
 │   ├── steering/                         # product.md, tech.md, structure.md
 │   ├── hooks/                            # guard-kiro-tracked, backend-tests-on-save
-│   └── settings/                         # cli.json (no mcp.json — no MCP servers used)
+│   └── settings/                         # cli.json (Kiro IDE settings)
 ├── backend/                              # FastAPI + analyzer seam + tests
 ├── frontend/                             # Vite + React caller page and dashboard
 ├── .env.example
@@ -149,7 +149,7 @@ hackachusetts-2026/
 ## Contributing
 Work through tasks in `.kiro/specs/help-capture-and-routing/tasks.md`. Keep the
 analyzer seam intact (no vendor SDKs in routing/dispatch), keep the scripted `mock` backend
-deterministic, and update `HACKATHON.md` §3.8 as Kiro features are used.
+deterministic, and update `HACKATHON.md` §3.6 as Kiro features are used.
 
 ## License
 Released under the **MIT License** — see [`LICENSE`](./LICENSE). Third-party components

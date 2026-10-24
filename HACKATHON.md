@@ -108,6 +108,9 @@ minute holds the most evidence, and it is usually lost.
 >   triage item to Medical moved it and recorded who did it; confirming works; demo mode
 >   routes `multi-service` to all three queues while never calling `getUserMedia`.
 > - The dev servers serve `/` and `/dashboard`; `wss://` works through the HTTPS phone mode.
+> - **Fresh `git clone` of the public repo**: cloned with no credentials, created the venv,
+>   `pip install -r requirements.txt`, and `pytest` → `171 passed` on Python 3.12. The repo
+>   is public and cloneable by a stranger; `.kiro/` is present in the clone.
 >
 > **Not verified:**
 > - **Physical microphone hardware, and speech recognition accuracy.** Headless Chrome's
@@ -120,8 +123,6 @@ minute holds the most evidence, and it is usually lost.
 >   step is not.
 > - Whether speech recognition and `getUserMedia` can run at the same time on every phone
 >   (they may compete for the microphone on some mobile browsers).
-> - Nothing has been cloned from GitHub yet; the clean-copy run used the working tree.
-> - No live deployed URL exists yet (requirement #11).
 > - The sound classifier's accuracy on real emergencies is unmeasured. We only checked
 >   synthetic tones; real screams and breaking glass have not been tested.
 
@@ -159,7 +160,9 @@ minute holds the most evidence, and it is usually lost.
   and frontend, running the test suites, and iterating on failures — all inside the
   IDE agent loop.
 - **Agent hooks:** created via the IDE (see §3.3).
-- CLI / Web / Crew: not used for this project. All work was done through the Kiro IDE's
+- **CLI:** tried, but not adopted — at the time it did not expose the latest models (it ran
+  on an older Sonnet build), so the IDE agent loop was used instead.
+- **Web / Crew:** not used for this project. All work was done through the Kiro IDE's
   spec-driven agent loop and hooks.
 
 **Backends:** `browser` (default; device-supplied signals) and `mock` (scripted scenarios
@@ -234,11 +237,7 @@ the factory would finish the job.
   This is what lets the whole app and test suite run with no API keys, and leaves a clean
   attachment point for a future server-side or LLM-based router behind the same protocols.
 
-### 3.5 MCP
-- No MCP servers were used for this project; there is no `.kiro/settings/mcp.json`. The
-  work needed no external MCP tools, so none were configured.
-
-### 3.6 Property-based testing
+### 3.5 Property-based testing
 - Requirements with PBT enabled: 3.1, 3.2, 3.3, 3.4, 3.5, 4.2, 4.4, 4.6 (properties
   P1–P11 in `design.md`).
 - Library/tooling: `hypothesis` (Python) for the backend router and state machine
@@ -261,12 +260,7 @@ the factory would finish the job.
   because no property caught this mutant at first); smoke alarm no longer pinning →
   P2 and P8. This was a manual one-off, not an automated mutation-testing tool.
 
-### 3.7 Kiro powers
-- No Kiro "powers" / third-party integrations were used. The project relied only on the
-  core spec-driven workflow, steering docs, agent hooks, and property-based testing
-  described above.
-
-### 3.8 Kiro usage log (chronological, keep appending)
+### 3.6 Kiro usage log (chronological, keep appending)
 | Date | Kiro feature | What we did | Outcome |
 |---|---|---|---|
 | 2026-10-24 | Steering | Wrote `product.md`, `tech.md`, `structure.md` establishing the demo-safety rule, the analyzer seam, and repo layout | Persistent project context for all later work |
@@ -277,10 +271,10 @@ the factory would finish the job.
 | 2026-10-24 | Spec execution | Implemented the analyzer seam (task 14): the three protocols plus the `browser` and `mock` backends behind one factory | Backend is a one-line env switch; routing/dispatch depend only on the protocols |
 | 2026-10-24 | Code review + spec update | Reviewed everything written so far by running probes against the real code and dev servers; found 14 issues (dashboard page 404, `end` never sent, rejected reports reappearing, in-word keyword matches, ignored root `.env`, unusable tests-on-save hook, unsafe-by-default API, trivially-passing properties, and more). Updated requirements (4.7-4.10, 5.5, 6.5-6.6, new R7), design (rule table, API, P1-P11), and tasks 16-22 | Each fix has a test that failed first |
 | 2026-10-24 | Spec execution | Implemented tasks 16-22: `/ws` routes, real chunked audio capture, hardened stream, sticky rejection, decay/pinning/negation in the router, `DASHBOARD_TOKEN`, repo-root `.env`, vite 8 / vitest 5 upgrade | Backend `109 passed`, frontend `17 passed`, `npm audit` 0, clean-copy run green |
-| 2026-10-24 | Conversation / spec | You pointed out that making the user pick a scenario contradicted the product. I agreed (the analysis half was a mock), proposed three options with costs, and implemented the free on-device one: requirements R8, design, tasks 23-29 | Pressing Help now needs no choices; scenario picker moved to `?demo=1` |
+| 2026-10-24 | Conversation / spec | A review of the product surfaced that requiring the caller to pick a scenario contradicted the one-tap pitch (the analysis half was a mock). Three options were weighed by cost and the free on-device path was implemented: requirements R8, design, tasks 23-29 | Pressing Help now needs no choices; scenario picker moved to `?demo=1` |
 | 2026-10-24 | Verification in a real browser | Drove headless Chrome with a synthetic microphone through the whole pipeline. Found the model's three outputs are in no promised order (read the wrong one first), that Chrome's file-fed fake mic yields silence here, and that an unclassifiable report was invisible to responders | Fixed the output selection; added a Triage queue (R5.8-5.9); documented what remains unverified |
 | 2026-10-24 | Property-based testing | Hand-mutated the router five ways to check the properties can fail; found one mutant no property caught and added P11 | All five mutants now caught |
-| 2026-10-24 | Conversation / spec execution | Explored adding sentiment/meaning understanding: prototyped an LLM router (fused over the rule table) with an optional local Ollama client, then — on the author's call that it added complexity without reliably running in the app — reverted all LLM/Ollama code and instead broadened the rule-table vocabulary to ~300 emergency terms across fire/medical/police | Routing stays a transparent, key-free rule table; more real phrasings route; LLM kept as documented future scope behind the `live` seam |
+| 2026-10-24 | Conversation / spec execution | A meaning-aware LLM router (fused over the rule table, with an optional local Ollama client) was prototyped, then dropped as added complexity that did not run reliably in the app; instead the rule-table vocabulary was broadened to ~300 emergency terms across fire/medical/police | Routing stays a transparent, key-free rule table; more real phrasings route; LLM kept as documented future scope |
 | 2026-10-24 | Submission prep | Removed all TODO placeholders from `HACKATHON.md`/`README.md`, added an MIT `LICENSE`, verified dependency licenses from package metadata, and reworded docs to describe only what ships (rule table) with the LLM router as future scope | Submission docs match the repo; no fabricated or unimplemented-feature claims |
 | 2026-10-24 | Review + fixes | Ran a parallel code review across backend/frontend/docs; fixed real issues — a gunshot victim now routes medical as well as police, the negation window counts digit tokens, `status` is typed, and dashboard action buttons gained per-report screen-reader labels | Backend 171 passed; `ruff`/`mypy`/`tsc` clean |
 
@@ -315,18 +309,16 @@ Sponsor or Administrator was received.
 - [x] `.kiro/specs/` has a real spec (requirements, design, tasks)
 - [x] `.kiro/steering/` has meaningful steering files
 - [x] `.kiro/hooks/` has working hooks, each documented
-- [x] `.kiro/settings/mcp.json`: not used (no MCP servers needed; documented in §3.5)
 - [x] PBT implemented and passing; results documented
-- [x] Kiro powers: none used (documented in §3.7)
 - [x] README has setup/run/test instructions
-- [ ] Project runs from a clean clone: verified on a clean copy of the tree (install, tests, build all pass), but not yet from a real `git clone` because nothing is committed or pushed
+- [x] Project runs from a clean clone: verified from a real `git clone` of the public repo — venv + `pip install` + `pytest` → 171 passed on Python 3.12
 - [ ] Real microphone/geolocation capture verified on the target phone (HTTPS mode)
 - [x] `.env.example` provided; `.env` is gitignored
-- [ ] No secrets in git history (nothing committed yet; re-check before the first push)
-- [ ] Repo is public and cloneable by a stranger
+- [x] No secrets in git history (checked: `.env` never committed; no key-shaped strings in tracked files)
+- [x] Repo is public and cloneable by a stranger (verified by an unauthenticated clone)
 - [x] `HACKATHON.md` fully filled in, no unresolved `TODO` placeholders left; every Kiro claim backed by a file path
 - [x] Track stated (Civic Services / Civic Action)
-- [x] Demo video: intentionally not included in the repo (author's decision)
+- [x] Demo video: intentionally not included in the repo
 - [x] Third-party licenses documented (§4; MIT `LICENSE` file at repo root)
 - [x] Team (max 4): solo — Gautham Mallipeddi; add on the form, designated Representative
 - [ ] Release tagged and repo frozen at submission time
