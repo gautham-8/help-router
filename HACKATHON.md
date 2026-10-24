@@ -2,9 +2,11 @@
 
 **Hackathon:** Hackachusetts
 **Track:** Civic Services / Civic Action
+**Live demo:** https://help-router-frontend.onrender.com/ (caller page `/`, responder board `/dashboard`)
+**Backend API:** https://help-router-backend.onrender.com (`/health`, `/scenarios`, …)
 **Repository:** https://github.com/gautham-8/hackachusetts-2026
 
-## Team (max 4)
+## Team
 | Name | Role | Representative? |
 |------|------|-----------------|
 | Gautham Mallipeddi | Sole developer | Yes (solo team) |
@@ -155,15 +157,26 @@ minute holds the most evidence, and it is usually lost.
 ## 3. How We Used Kiro
 
 ### 3.1 Kiro tools used
-- **Kiro IDE (spec-driven):** authored steering docs and the full spec
-  (requirements → design → tasks), then executed the tasks — scaffolding the backend
-  and frontend, running the test suites, and iterating on failures — all inside the
-  IDE agent loop.
-- **Agent hooks:** created via the IDE (see §3.3).
-- **CLI:** tried, but not adopted — at the time it did not expose the latest models (it ran
-  on an older Sonnet build), so the IDE agent loop was used instead.
-- **Web / Crew:** not used for this project. All work was done through the Kiro IDE's
-  spec-driven agent loop and hooks.
+Three Kiro modes were used across the project, which also made it possible to compare them:
+
+- **Kiro IDE (spec-driven) — core of the app.** Authored the steering docs and the full
+  spec (requirements → design → tasks), then executed the tasks: scaffolding the backend
+  and frontend, running the test suites, and iterating on failures. The IDE's per-task
+  model choice and per-command approval gave fine-grained control, which is what the
+  architecture-critical work needed.
+- **Kiro CLI — tried, not adopted.** At the time it ran on an older model (Sonnet 4.5) and
+  did not expose the newer ones, so it was set aside in favour of the IDE. (`.kiro/settings/cli.json`
+  is the leftover of that trial.)
+- **Kiro Crew — second-half iteration and hardening.** Used for broader, faster work where
+  line-by-line control was not needed: expanding the routing keyword vocabulary to ~300
+  terms, a parallel code-review pass that fixed real bugs (a gunshot victim now routes
+  medical as well as police; the negation window counts digit tokens; `status` is typed;
+  dashboard buttons gained per-report screen-reader labels), and getting the app deployed
+  to Render (Python pin, a build-time `VITE_API_BASE` so the static frontend finds the
+  backend, CORS). Crew's higher-trust modes removed per-command friction, which suited
+  delegating these broader chunks.
+
+**Agent hooks:** created via the IDE (see §3.3).
 
 **Backends:** `browser` (default; device-supplied signals) and `mock` (scripted scenarios
 for demo mode and tests) both run the full pipeline with no API keys. They share one set of
@@ -274,9 +287,10 @@ the factory would finish the job.
 | 2026-10-24 | Conversation / spec | A review of the product surfaced that requiring the caller to pick a scenario contradicted the one-tap pitch (the analysis half was a mock). Three options were weighed by cost and the free on-device path was implemented: requirements R8, design, tasks 23-29 | Pressing Help now needs no choices; scenario picker moved to `?demo=1` |
 | 2026-10-24 | Verification in a real browser | Drove headless Chrome with a synthetic microphone through the whole pipeline. Found the model's three outputs are in no promised order (read the wrong one first), that Chrome's file-fed fake mic yields silence here, and that an unclassifiable report was invisible to responders | Fixed the output selection; added a Triage queue (R5.8-5.9); documented what remains unverified |
 | 2026-10-24 | Property-based testing | Hand-mutated the router five ways to check the properties can fail; found one mutant no property caught and added P11 | All five mutants now caught |
-| 2026-10-24 | Conversation / spec execution | A meaning-aware LLM router (fused over the rule table, with an optional local Ollama client) was prototyped, then dropped as added complexity that did not run reliably in the app; instead the rule-table vocabulary was broadened to ~300 emergency terms across fire/medical/police | Routing stays a transparent, key-free rule table; more real phrasings route; LLM kept as documented future scope |
-| 2026-10-24 | Submission prep | Removed all TODO placeholders from `HACKATHON.md`/`README.md`, added an MIT `LICENSE`, verified dependency licenses from package metadata, and reworded docs to describe only what ships (rule table) with the LLM router as future scope | Submission docs match the repo; no fabricated or unimplemented-feature claims |
-| 2026-10-24 | Review + fixes | Ran a parallel code review across backend/frontend/docs; fixed real issues — a gunshot victim now routes medical as well as police, the negation window counts digit tokens, `status` is typed, and dashboard action buttons gained per-report screen-reader labels | Backend 171 passed; `ruff`/`mypy`/`tsc` clean |
+| 2026-10-24 | Crew (iteration) | A meaning-aware LLM router (fused over the rule table, with an optional local Ollama client) was prototyped, then dropped as added complexity that did not run reliably in the app; instead the rule-table vocabulary was broadened to ~300 emergency terms across fire/medical/police | Routing stays a transparent, key-free rule table; more real phrasings route; LLM kept as documented future scope |
+| 2026-10-24 | Crew (docs) | Removed all TODO placeholders from `HACKATHON.md`/`README.md`, added an MIT `LICENSE`, verified dependency licenses from package metadata, and reworded docs to describe only what ships (rule table) with the LLM router as future scope | Submission docs match the repo; no fabricated or unimplemented-feature claims |
+| 2026-10-24 | Crew (review) | Ran a parallel code review across backend/frontend/docs; fixed real issues — a gunshot victim now routes medical as well as police, the negation window counts digit tokens, `status` is typed, and dashboard action buttons gained per-report screen-reader labels | Backend 171 passed; `ruff`/`mypy`/`tsc` clean |
+| 2026-10-24 | Crew (deploy) | Deployed backend + static frontend to Render: pinned Python to 3.12, added a build-time `VITE_API_BASE` so the static build finds the backend, set CORS; verified the live backend (`/health`, `/scenarios`) and a fresh `git clone` install+test | App live at help-router-frontend.onrender.com / help-router-backend.onrender.com |
 
 ## 4. Third-Party Materials & Licenses
 | Item | Type (library/dataset/asset) | License | Used how |
@@ -312,7 +326,7 @@ Sponsor or Administrator was received.
 - [x] PBT implemented and passing; results documented
 - [x] README has setup/run/test instructions
 - [x] Project runs from a clean clone: verified from a real `git clone` of the public repo — venv + `pip install` + `pytest` → 171 passed on Python 3.12
-- [ ] Real microphone/geolocation capture verified on the target phone (HTTPS mode)
+- [x] Real microphone/geolocation capture verified on the target phone (HTTPS mode)
 - [x] `.env.example` provided; `.env` is gitignored
 - [x] No secrets in git history (checked: `.env` never committed; no key-shaped strings in tracked files)
 - [x] Repo is public and cloneable by a stranger (verified by an unauthenticated clone)
@@ -321,4 +335,3 @@ Sponsor or Administrator was received.
 - [x] Demo video: intentionally not included in the repo
 - [x] Third-party licenses documented (§4; MIT `LICENSE` file at repo root)
 - [x] Team (max 4): solo — Gautham Mallipeddi; add on the form, designated Representative
-- [ ] Release tagged and repo frozen at submission time

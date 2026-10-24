@@ -10,6 +10,7 @@ service's live dispatch queue, where a human responder confirms every dispatch.
 > **Demo safety:** This project never contacts real emergency services. Every route
 > targets our own dashboard queues, and a human confirms each dispatch.
 
+**Live demo:** [help-router-frontend.onrender.com](https://help-router-frontend.onrender.com/) (caller page; responder board at `/dashboard`)
 **Submission & Kiro write-up:** see [HACKATHON.md](./HACKATHON.md)
 
 ## Overview
