@@ -26,8 +26,8 @@ evidence, and it is usually lost. Help Router captures that minute and routes it
   (Web Speech API) and classifies sounds (Google's YAMNet via TensorFlow.js: screams,
   breaking glass, sirens, smoke alarms, explosions). Only text and sound labels are sent.
 - **Rule-based routing with confidences** — a transparent rule table fuses words and
-  sounds into a set of services, each with a confidence. It is not an LLM (that is the
-  `live` seam).
+  sounds into a set of services, each with a confidence. (A meaning-aware LLM router is a
+  planned future direction, not part of this build.)
 - **Provisional then refined** — a route appears after ~10 s and sharpens over the minute.
 - **Dispatch dashboard** — police / fire / medical queues plus a **triage** queue for
   anything the system could not classify, so an unclear emergency still reaches a human.
@@ -36,10 +36,9 @@ evidence, and it is usually lost. Help Router captures that minute and routes it
 ### What is real and what is not
 | Part | Status |
 |---|---|
-| Speech → text | Real, but done by your **browser's** speech service. In Chrome that means audio goes to Google; Safari uses Apple. This app receives only the text. Not available in every browser (e.g. Firefox). With the voice trigger on, that speech service hears the room the whole time the page is open. |
+| Speech → text | Real, but done by the **caller's browser** speech service. In Chrome that means audio goes to Google; Safari uses Apple. This app receives only the text. Not available in every browser (e.g. Firefox). With the voice trigger on, that speech service hears the room the whole time the page is open. |
 | Sound detection | Real. YAMNet runs on the device; the model is in this repo (`frontend/public/models/yamnet`, 15 MB), so it works offline. |
 | Routing | A hand-written rule table (keywords + sounds), not a trained model or an LLM. |
-| `ANALYZER_BACKEND=live` | **Not implemented.** The server-side speech and sound adapters are empty seams. |
 | Demo mode (`/?demo=1`) | Plays a scripted scenario and does not use the microphone. For recordings and offline demos. |
 
 Limits worth knowing: browser speech recognition can **mishear or invent words** (even

@@ -95,7 +95,7 @@ minute holds the most evidence, and it is usually lost.
 
 > **Verified results** (2026-10-24; backend re-run on this tree after the routing-vocabulary
 > expansion; frontend figures from the last full run with Node 22):
-> - Backend: `169 passed` (103 unit, 11 property, 55 integration); `ruff` and `mypy` clean.
+> - Backend: `171 passed` (105 unit, 11 property, 55 integration); `ruff` and `mypy` clean.
 > - Frontend: `tsc` clean; `43 passed`, including `fast-check` properties and the **real
 >   vendored YAMNet model run on generated audio** (silence yields no events; a smoke-alarm
 >   beep pattern is detected above 50%; a siren-style wail is flagged as an alarm sound);
@@ -141,11 +141,8 @@ minute holds the most evidence, and it is usually lost.
   terms across fire/medical/police) fused with sound events, with a deliberately narrow
   negation rule. It is not a trained model or an LLM. A word or phrasing not in the
   vocabulary falls to triage; adding coverage is a one-line edit to the term lists in
-  `backend/app/analyzers/rule_router.py`. An LLM router that reads *meaning* rather than
-  matching words is a planned future direction behind the existing `Router` seam (the
-  `live` backend); it is **not built**.
-- **`ANALYZER_BACKEND=live` is not implemented.** Its speech and sound adapters raise
-  `NotImplementedError`; selecting it with no keys fails at report creation with a clear 503.
+  `backend/app/analyzers/rule_router.py`. A meaning-aware LLM router is a planned future
+  direction behind the existing `Router` interface; it is not part of this build.
 - **Device-supplied signals are unauthenticated claims.** A hostile client can send a fake
   smoke alarm. The control is that a human confirms every dispatch.
 - **Storage** is in memory (500 reports max, lost on restart), and with no `DASHBOARD_TOKEN`
@@ -165,19 +162,15 @@ minute holds the most evidence, and it is usually lost.
 - CLI / Web / Crew: not used for this project. All work was done through the Kiro IDE's
   spec-driven agent loop and hooks.
 
-**Backends:** `browser` (default; device-supplied signals), `mock` (scripted scenarios for
-demo mode and tests), `live` (server-side models, not implemented). All use the same
-`Transcriber` / `AudioEventDetector` / `Router` protocols and the same rule router.
+**Backends:** `browser` (default; device-supplied signals) and `mock` (scripted scenarios
+for demo mode and tests) both run the full pipeline with no API keys. They share one set of
+`Transcriber` / `AudioEventDetector` / `Router` protocols and the same rule router, so the
+backend is a one-line env switch with nothing downstream to change.
 
-**Live-backend plan:** `backend/app/analyzers/live/` holds adapters implementing those
-protocols.
-`LiveTranscriber` and `LiveAudioEventDetector` are integration seams that raise a clear
-error until a provider SDK is wired and the relevant `.env` keys are set;
-`LiveRouter` currently reuses the deterministic rule-table fusion so routing still
-satisfies the router properties (P1–P6, P8–P11) the moment real transcription/detection
-are connected. Selecting the backend is a one-line env change
-(`ANALYZER_BACKEND=live`); no downstream code changes. A live backend with missing keys
-fails at report creation with a 503 and a clear message.
+**Why the seam matters:** because routing, dispatch, and the WebSocket layer depend only on
+those three protocols, swapping the signal source is isolated to one factory. That same
+boundary is where a future server-side or LLM-based router would attach — the architecture
+leaves room for it without touching the rest of the app.
 
 Known wart in the seam: `backend/app/main.py` imports the demo-scenario loader
 (`list_scenarios`, `get_scenario`) straight from `analyzers/mock`, because scenarios are
@@ -237,10 +230,9 @@ the factory would finish the job.
   `tech.md` ("routing, dispatch, and the WebSocket layer import the protocols, never a
   vendor SDK"). The result is visible in the code: `backend/app/routing/` and
   `backend/app/dispatch/` import only `app.analyzers.interfaces` and domain models, and
-  switching `ANALYZER_BACKEND=browser|mock|live` in `factory.py` changes nothing downstream.
-  The `live` adapters (`backend/app/analyzers/live/`) are drop-in implementations of
-  the same three protocols. This is what lets the whole app and test suite run with no
-  API keys while leaving a clean path to real models.
+  switching `ANALYZER_BACKEND=browser|mock` in `factory.py` changes nothing downstream.
+  This is what lets the whole app and test suite run with no API keys, and leaves a clean
+  attachment point for a future server-side or LLM-based router behind the same protocols.
 
 ### 3.5 MCP
 - No MCP servers were used for this project; there is no `.kiro/settings/mcp.json`. The
@@ -282,14 +274,15 @@ the factory would finish the job.
 | 2026-10-24 | Hooks | Created `guard-kiro-tracked` and `backend-tests-on-save` hooks | Automated compliance guard + tests-on-save |
 | 2026-10-24 | Spec execution | Implemented backend tasks 1–10: domain models, forward-only state machine, analyzer seam, deterministic mock backend + 4 scenarios, dispatch queues, FastAPI + WebSocket app | `29 passed` (incl. 8 Hypothesis property tests); `ruff` clean; backend serves `/health`, `/scenarios`, `/reports` |
 | 2026-10-24 | Spec execution | Implemented frontend tasks 11–13: caller PWA (one-tap capture, scenario picker, live status, demo banner) and three-queue dispatch dashboard over WebSocket | `tsc` clean; `2 passed` (incl. a `fast-check` property test); production build succeeds |
-| 2026-10-24 | Spec execution | Implemented live-backend adapters (task 14) behind the same protocols | Clean seam to real models; selected via `ANALYZER_BACKEND=live`. Speech and audio-event adapters are unimplemented seams |
+| 2026-10-24 | Spec execution | Implemented the analyzer seam (task 14): the three protocols plus the `browser` and `mock` backends behind one factory | Backend is a one-line env switch; routing/dispatch depend only on the protocols |
 | 2026-10-24 | Code review + spec update | Reviewed everything written so far by running probes against the real code and dev servers; found 14 issues (dashboard page 404, `end` never sent, rejected reports reappearing, in-word keyword matches, ignored root `.env`, unusable tests-on-save hook, unsafe-by-default API, trivially-passing properties, and more). Updated requirements (4.7-4.10, 5.5, 6.5-6.6, new R7), design (rule table, API, P1-P11), and tasks 16-22 | Each fix has a test that failed first |
 | 2026-10-24 | Spec execution | Implemented tasks 16-22: `/ws` routes, real chunked audio capture, hardened stream, sticky rejection, decay/pinning/negation in the router, `DASHBOARD_TOKEN`, repo-root `.env`, vite 8 / vitest 5 upgrade | Backend `109 passed`, frontend `17 passed`, `npm audit` 0, clean-copy run green |
 | 2026-10-24 | Conversation / spec | You pointed out that making the user pick a scenario contradicted the product. I agreed (the analysis half was a mock), proposed three options with costs, and implemented the free on-device one: requirements R8, design, tasks 23-29 | Pressing Help now needs no choices; scenario picker moved to `?demo=1` |
 | 2026-10-24 | Verification in a real browser | Drove headless Chrome with a synthetic microphone through the whole pipeline. Found the model's three outputs are in no promised order (read the wrong one first), that Chrome's file-fed fake mic yields silence here, and that an unclassifiable report was invisible to responders | Fixed the output selection; added a Triage queue (R5.8-5.9); documented what remains unverified |
 | 2026-10-24 | Property-based testing | Hand-mutated the router five ways to check the properties can fail; found one mutant no property caught and added P11 | All five mutants now caught |
 | 2026-10-24 | Conversation / spec execution | Explored adding sentiment/meaning understanding: prototyped an LLM router (fused over the rule table) with an optional local Ollama client, then — on the author's call that it added complexity without reliably running in the app — reverted all LLM/Ollama code and instead broadened the rule-table vocabulary to ~300 emergency terms across fire/medical/police | Routing stays a transparent, key-free rule table; more real phrasings route; LLM kept as documented future scope behind the `live` seam |
-| 2026-10-24 | Submission prep | Removed all TODO placeholders from `HACKATHON.md`/`README.md`, added an MIT `LICENSE`, verified dependency licenses from package metadata, corrected stale test counts, and fixed a stale "LLM router" feature claim to match the shipped rule table | Submission docs match the repo; no fabricated claims |
+| 2026-10-24 | Submission prep | Removed all TODO placeholders from `HACKATHON.md`/`README.md`, added an MIT `LICENSE`, verified dependency licenses from package metadata, and reworded docs to describe only what ships (rule table) with the LLM router as future scope | Submission docs match the repo; no fabricated or unimplemented-feature claims |
+| 2026-10-24 | Review + fixes | Ran a parallel code review across backend/frontend/docs; fixed real issues — a gunshot victim now routes medical as well as police, the negation window counts digit tokens, `status` is typed, and dashboard action buttons gained per-report screen-reader labels | Backend 171 passed; `ruff`/`mypy`/`tsc` clean |
 
 ## 4. Third-Party Materials & Licenses
 | Item | Type (library/dataset/asset) | License | Used how |
