@@ -1,0 +1,31 @@
+{
+  "id": "multi-service",
+  "label": "Explosion with intruder and injuries",
+  "summary": "Explosion, injuries, and a hostile person. Routes to police, fire, and medical.",
+  "chunks": [
+    {
+      "transcript": "there was an explosion",
+      "events": [{ "kind": "explosion", "confidence": 0.9 }, { "kind": "scream", "confidence": 0.7 }]
+    },
+    {
+      "transcript": "there's a fire and smoke everywhere",
+      "events": [{ "kind": "smoke_alarm", "confidence": 0.85 }]
+    },
+    {
+      "transcript": "people are hurt and bleeding",
+      "events": [{ "kind": "scream", "confidence": 0.6 }]
+    },
+    {
+      "transcript": "someone with a gun is threatening people",
+      "events": [{ "kind": "glass_breaking", "confidence": 0.5 }]
+    },
+    {
+      "transcript": "the fire is spreading and more people are injured",
+      "events": [{ "kind": "smoke_alarm", "confidence": 0.8 }]
+    },
+    {
+      "transcript": "we need police fire and ambulances now",
+      "events": [{ "kind": "siren", "confidence": 0.4 }]
+    }
+  ]
+}

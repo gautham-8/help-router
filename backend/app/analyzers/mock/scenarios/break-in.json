@@ -1,0 +1,31 @@
+{
+  "id": "break-in",
+  "label": "Break-in",
+  "summary": "Intruder breaking a window and entering a home. Routes to police.",
+  "chunks": [
+    {
+      "transcript": "someone is breaking in",
+      "events": [{ "kind": "glass_breaking", "confidence": 0.85 }]
+    },
+    {
+      "transcript": "they broke the back window there's an intruder",
+      "events": [{ "kind": "glass_breaking", "confidence": 0.7 }]
+    },
+    {
+      "transcript": "I think the attacker has a gun",
+      "events": []
+    },
+    {
+      "transcript": "I'm hiding in the bedroom closet",
+      "events": []
+    },
+    {
+      "transcript": "I can hear them moving around downstairs",
+      "events": []
+    },
+    {
+      "transcript": "please send the police quickly",
+      "events": [{ "kind": "siren", "confidence": 0.3 }]
+    }
+  ]
+}

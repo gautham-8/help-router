@@ -1,0 +1,31 @@
+{
+  "id": "kitchen-fire",
+  "label": "Kitchen fire",
+  "summary": "Smoke alarm and spreading fire in a home kitchen. Routes to fire.",
+  "chunks": [
+    {
+      "transcript": "help there's smoke in the kitchen",
+      "events": [{ "kind": "smoke_alarm", "confidence": 0.95 }]
+    },
+    {
+      "transcript": "the stove caught fire it's spreading",
+      "events": [{ "kind": "smoke_alarm", "confidence": 0.9 }, { "kind": "alarm_generic", "confidence": 0.6 }]
+    },
+    {
+      "transcript": "flames are getting bigger I can't put it out",
+      "events": [{ "kind": "smoke_alarm", "confidence": 0.92 }]
+    },
+    {
+      "transcript": "it's reaching the cabinets please hurry",
+      "events": [{ "kind": "smoke_alarm", "confidence": 0.9 }]
+    },
+    {
+      "transcript": "I'm getting out of the house now",
+      "events": [{ "kind": "smoke_alarm", "confidence": 0.85 }]
+    },
+    {
+      "transcript": "I'm outside the fire is still going",
+      "events": [{ "kind": "smoke_alarm", "confidence": 0.7 }]
+    }
+  ]
+}

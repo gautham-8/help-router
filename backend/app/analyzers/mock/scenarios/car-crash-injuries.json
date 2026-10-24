@@ -1,0 +1,31 @@
+{
+  "id": "car-crash-injuries",
+  "label": "Car crash with injuries",
+  "summary": "Collision with an injured, bleeding person. Routes to police and medical.",
+  "chunks": [
+    {
+      "transcript": "there's been a car crash a vehicle ran a red light",
+      "events": [{ "kind": "glass_breaking", "confidence": 0.8 }, { "kind": "scream", "confidence": 0.5 }]
+    },
+    {
+      "transcript": "a driver is bleeding and not moving the other driver fled the scene",
+      "events": [{ "kind": "glass_breaking", "confidence": 0.5 }, { "kind": "scream", "confidence": 0.6 }]
+    },
+    {
+      "transcript": "someone is hurt badly we need an ambulance",
+      "events": []
+    },
+    {
+      "transcript": "traffic is blocked people are injured",
+      "events": [{ "kind": "siren", "confidence": 0.4 }]
+    },
+    {
+      "transcript": "we need police to block the road",
+      "events": []
+    },
+    {
+      "transcript": "please send police and medics the person is unconscious",
+      "events": []
+    }
+  ]
+}
