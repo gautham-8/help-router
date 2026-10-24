@@ -40,28 +40,127 @@ _EVENT_WEIGHTS: dict[str, tuple[Service | None, float]] = {
 # Events that pin a service regardless of threshold (if confident enough).
 _HARD_GUARANTEES: dict[str, Service] = {"smoke_alarm": "fire"}
 
+# ---------------------------------------------------------------------------
+# Keyword vocabulary.
+#
+# Each service has a big list of TERMS — real ways people describe an emergency. A term
+# may be a word or a short phrase. The regex matches whole words only (so "gun" never
+# fires inside "begun"), and the engine already handles negation ("no fire" does not
+# route). Common inflections are written out as alternations in the term itself
+# (e.g. "bleeding|bleeds|bled") rather than with fragile stemming.
+#
+# To add coverage: drop a term into the right list. No other code changes. Keep terms
+# lowercase; phrases match with normal spacing.
+# ---------------------------------------------------------------------------
+
+_FIRE_TERMS: list[str] = [
+    # fire itself
+    "fire", "fires", "on fire", "catching fire", "caught fire", "caught on fire",
+    "house fire", "kitchen fire", "car fire", "grease fire", "electrical fire",
+    "wildfire", "brush fire", "forest fire", "building fire", "apartment fire",
+    # smoke / flames / heat
+    "smoke", "smoky", "smoke everywhere", "thick smoke", "black smoke", "smell smoke",
+    "smell of smoke", "smells like smoke", "smoke alarm", "fire alarm",
+    "flame", "flames", "flames everywhere", "up in flames", "engulfed",
+    "burning", "burnt", "burned", "it's burning", "something's burning", "stuff burning",
+    "blaze", "blazing", "inferno", "scorched", "singed",
+    # cause / spread
+    "explosion", "explosions", "blew up", "blown up", "exploded", "gas leak",
+    "gas smell", "smell gas", "propane", "sparks", "sparking", "short circuit",
+    "wires sparking", "stove on fire", "oven on fire", "oil caught fire",
+    "candle fell", "fireworks", "bonfire out of control", "spreading fire",
+    "fire spreading", "smoke inhalation", "can't see through smoke",
+    "building's smoking", "roof on fire", "trapped by fire", "smoke filling the room",
+    "fire extinguisher", "need the fire department", "call the fire brigade",
+]
+
+_MEDICAL_TERMS: list[str] = [
+    # injury / bleeding
+    "hurt", "injured", "injury", "injuries", "wound", "wounds", "wounded",
+    "bleeding", "bleeds", "bled", "blood", "bloody", "losing blood", "lots of blood",
+    "deep cut", "gash", "laceration", "severed", "amputated", "crushed", "broken bone",
+    "broken leg", "broken arm", "fracture", "compound fracture", "head injury",
+    "concussion", "internal bleeding", "bruised badly", "impaled",
+    "bullet", "bullets", "bullet wound", "gunshot wound", "shot in the", "been shot",
+    "stab wound", "knife wound",
+    # breathing / cardiac / collapse
+    "not breathing", "can't breathe", "cant breathe", "trouble breathing",
+    "struggling to breathe", "gasping", "choking", "choked", "suffocating",
+    "heart attack", "cardiac arrest", "chest pain", "chest pains", "clutching chest",
+    "stroke", "seizure", "convulsing", "fainted", "passed out", "collapsed",
+    "unconscious", "unresponsive", "won't wake up", "not responding", "no pulse",
+    # drowning / environmental
+    "drowning", "drowned", "underwater", "went under", "can't swim", "pulled under",
+    "water over my head", "water over the head", "over my head", "head under water",
+    "can't keep my head up", "going under", "sinking",
+    "falling from", "fell from", "fell off", "big fall",
+    "hypothermia", "heat stroke", "frostbite", "electrocuted", "electric shock",
+    # illness / poisoning / obstetric
+    "overdose", "overdosed", "poisoned", "poisoning", "allergic reaction",
+    "anaphylaxis", "anaphylactic", "can't feel my legs", "paralyzed", "numb",
+    "diabetic", "insulin", "going into shock", "in shock", "vomiting blood",
+    "coughing blood", "pregnant", "in labor", "in labour", "giving birth",
+    "water broke", "baby coming", "miscarriage",
+    # dying / help asks
+    "dying", "he's dying", "she's dying", "going to die", "about to die",
+    "need an ambulance", "call an ambulance", "need a medic", "need paramedics",
+    "someone's hurt", "badly hurt", "critically injured", "life threatening",
+]
+
+_POLICE_TERMS: list[str] = [
+    # intrusion / theft
+    "break in", "break-in", "breaking in", "broke in", "broke into", "broken in",
+    "broken into", "breaking into", "home invasion",
+    "someone's in the house", "someone in my house", "intruder", "prowler",
+    "burglar", "burglary", "robbery", "robbed", "being robbed", "mugged", "mugging",
+    "stolen", "theft", "carjacking", "carjacked", "trespasser", "trespassing",
+    "someone following me", "being followed", "stalker", "stalking", "peeping",
+    # weapons / violence
+    "gun", "guns", "gunman", "gunshot", "gunshots", "shots fired", "shooting",
+    "shooter", "active shooter", "armed", "he has a weapon", "knife", "machete",
+    "stabbed", "stabbing", "being stabbed", "bullet", "bullets", "shot", "shot at",
+    "attack", "attacked", "being attacked", "attacker", "assault", "assaulted",
+    "beaten", "beating", "jumped", "fight", "fighting", "brawl",
+    "domestic violence", "he's hitting me", "she's hitting me", "being hit",
+    "strangling", "choking me", "held at gunpoint", "held at knifepoint",
+    "threatening me", "threatened", "threats", "death threat",
+    # abduction / hostage / killing
+    "kidnapped", "kidnapping", "abducted", "taken", "hostage", "held captive",
+    "tied up", "locked in", "won't let me leave", "trafficking",
+    "kill", "killing", "killed", "going to kill", "trying to kill me",
+    "murder", "murdered", "murdering", "slaughter", "slaughtered",
+    "someone's dead", "dead body", "shot someone", "stabbed someone",
+    # drugs / disorder / asking for police
+    "drug deal", "dealing drugs", "vandalism", "vandalizing", "riot", "looting",
+    "hit and run", "drunk driver", "road rage", "someone dangerous",
+    "call the police", "need the police", "need cops", "send police",
+]
+
+# crash straddles police + medical; keep it as a lighter medical signal like before
+_CRASH_TERMS: list[str] = [
+    "crash", "crashed", "car crash", "accident", "car accident", "collision",
+    "wreck", "pile up", "pileup", "rollover", "flipped the car", "hit by a car",
+    "ran off the road", "motorcycle accident",
+]
+
+
+def _compile_terms(terms: list[str]) -> re.Pattern[str]:
+    """Compile a term list into one whole-word, case-insensitive alternation.
+
+    Longer phrases are tried first so "chest pain" wins over a stray "pain" fragment.
+    Spaces in a term match one or more spaces so "break  in" still matches.
+    """
+    ordered = sorted(set(terms), key=len, reverse=True)
+    parts = [re.escape(term).replace(r"\ ", r"\s+") for term in ordered]
+    return re.compile(r"\b(?:" + "|".join(parts) + r")\b")
+
+
 # (pattern, service, weight). Whole words only; each pattern counts once per chunk.
 _KEYWORDS: list[tuple[re.Pattern[str], Service, float]] = [
-    (re.compile(r"\b(?:fires?|smoke|burning|burnt|flames?)\b"), "fire", 0.4),
-    (
-        re.compile(
-            r"\b(?:hurt|bleed(?:s|ing)?|blood|bloody|unconscious|unresponsive|injured"
-            r"|injuries|wound(?:s|ed)?|bullets?|shot|stabbed|not breathing|heart attack"
-            r"|chest pain|overdos(?:e|ed)|ambulances?|medics?)\b"
-        ),
-        "medical",
-        0.5,
-    ),
-    (
-        re.compile(
-            r"\b(?:break[- ]?in|breaking in|broke in|attacker|guns?|gunshots?|bullets?"
-            r"|shot|shots fired|shooting|shooter|robbery|robbed|stolen|intruder|stabbed"
-            r"|police)\b"
-        ),
-        "police",
-        0.5,
-    ),
-    (re.compile(r"\b(?:crash(?:ed)?|accident|collision)\b"), "medical", 0.3),
+    (_compile_terms(_FIRE_TERMS), "fire", 0.5),
+    (_compile_terms(_MEDICAL_TERMS), "medical", 0.5),
+    (_compile_terms(_POLICE_TERMS), "police", 0.5),
+    (_compile_terms(_CRASH_TERMS), "medical", 0.3),
 ]
 
 _WORD = re.compile(r"[a-z']+")

@@ -9,22 +9,32 @@ const SERVICE_LABEL: Record<string, string> = {
 
 export function RouteSummary({ decision }: { decision: RouteDecisionView }): JSX.Element {
   const routed = routedServices(decision);
+  const refined = decision.status === "refined";
 
   return (
-    <section className="route-summary" aria-label="Routing result">
-      <p className="route-status">
-        {decision.status === "refined" ? "Refined route" : "Provisional route"}
-      </p>
+    <section className="card-surface route-summary" aria-label="Routing result">
+      <div className="route-head">
+        <h2 className="section-title">Routing</h2>
+        <span className={`tag ${refined ? "tag-refined" : "tag-provisional"}`}>
+          {refined ? "Refined route" : "Provisional route"}
+        </span>
+      </div>
       {decision.needs_attention && (
         <p className="attention">No clear service yet — flagged for a responder.</p>
       )}
-      <ul>
-        {routed.map((s) => (
-          <li key={s}>
-            <span className={`pill pill-${s}`}>{SERVICE_LABEL[s]}</span>
-            <span className="conf">{Math.round((decision.services[s] ?? 0) * 100)}%</span>
-          </li>
-        ))}
+      <ul className="route-list">
+        {routed.map((s) => {
+          const pct = Math.round((decision.services[s] ?? 0) * 100);
+          return (
+            <li key={s}>
+              <span className={`pill pill-${s} svc-${s}`}>{SERVICE_LABEL[s]}</span>
+              <span className="meter" aria-hidden="true">
+                <span className={`meter-fill svc-${s}`} style={{ width: `${pct}%` }} />
+              </span>
+              <span className="conf">{pct}%</span>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

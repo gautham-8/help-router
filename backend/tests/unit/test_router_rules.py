@@ -10,6 +10,48 @@ from app.domain.models import AudioEvent, RouteDecision
 router = RuleRouter(min_service_conf=0.3, high_conf=0.7, carry_decay=0.85)
 
 
+# --- expanded vocabulary: real phrasings callers actually use ----------------
+
+
+@pytest.mark.parametrize(
+    "text,service",
+    [
+        ("I'm being killed and slaughtered", "police"),
+        ("someone is trying to kill me", "police"),
+        ("there's an intruder in my house", "police"),
+        ("someone broke into my house", "police"),
+        ("he has a knife", "police"),
+        ("active shooter", "police"),
+        ("I'm drowning", "medical"),
+        ("I'm falling from the sky", "medical"),
+        ("the water is over my head", "medical"),
+        ("he's not breathing", "medical"),
+        ("she had a seizure", "medical"),
+        ("my dad collapsed", "medical"),
+        ("I think it's a heart attack", "medical"),
+        ("the house is on fire", "fire"),
+        ("I smell gas", "fire"),
+        ("the stove caught fire", "fire"),
+        ("there was an explosion", "fire"),
+    ],
+)
+def test_real_phrasings_route(text: str, service: str) -> None:
+    assert service in router.route(text, [], None, "provisional").services
+
+
+def test_vocabulary_is_large() -> None:
+    # The whole point of this pass: a broad vocabulary, not five keywords.
+    from app.analyzers.rule_router import (
+        _CRASH_TERMS,
+        _FIRE_TERMS,
+        _MEDICAL_TERMS,
+        _POLICE_TERMS,
+    )
+
+    total = len(set(_FIRE_TERMS + _MEDICAL_TERMS + _POLICE_TERMS + _CRASH_TERMS))
+    assert total >= 300
+
+
 def test_smoke_alarm_routes_fire() -> None:
     events = [AudioEvent(kind="smoke_alarm", confidence=0.95)]
     decision = router.route("help there's smoke", events, None, "provisional")

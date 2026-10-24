@@ -29,6 +29,9 @@ confirms every dispatch.
 
 - **One-tap capture.** A single "Help" button records 60 seconds of audio in short
   chunks and captures geolocation, with no further input required from the caller.
+- **Voice trigger (opt-in).** Once enabled (remembered per device), saying "Help" starts
+  the same capture hands-free (`listenForWakeWord` in `frontend/src/lib/speech.ts`). The
+  button always remains for callers who cannot speak.
 - **Multi-signal understanding.** The caller's device transcribes speech and
   classifies sounds (screams, breaking glass, sirens, smoke alarms, explosions); a
   router fuses transcript + events into a set of services, each with a confidence

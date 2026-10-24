@@ -21,6 +21,8 @@ evidence, and it is usually lost. Help Router captures that minute and routes it
 
 - **One-tap capture** — press Help and nothing else: no scenario, no service to pick. The
   phone listens in ~10 s chunks for a minute and shares your location.
+- **Hands-free voice trigger (opt-in)** — turn it on once and just say "Help" to start the
+  same capture; the words said with it go into the first chunk. The choice is remembered.
 - **Multi-signal understanding, on the device** — the browser turns speech into text
   (Web Speech API) and classifies sounds (Google's YAMNet via TensorFlow.js: screams,
   breaking glass, sirens, smoke alarms, explosions). Only text and sound labels are sent.
@@ -35,7 +37,7 @@ evidence, and it is usually lost. Help Router captures that minute and routes it
 ### What is real and what is not
 | Part | Status |
 |---|---|
-| Speech → text | Real, but done by your **browser's** speech service. In Chrome that means audio goes to Google; Safari uses Apple. This app receives only the text. Not available in every browser (e.g. Firefox). |
+| Speech → text | Real, but done by your **browser's** speech service. In Chrome that means audio goes to Google; Safari uses Apple. This app receives only the text. Not available in every browser (e.g. Firefox). With the voice trigger on, that speech service hears the room the whole time the page is open. |
 | Sound detection | Real. YAMNet runs on the device; the model is in this repo (`frontend/public/models/yamnet`, 15 MB), so it works offline. |
 | Routing | A hand-written rule table (keywords + sounds), not a trained model or an LLM. |
 | `ANALYZER_BACKEND=live` | **Not implemented.** The server-side speech and sound adapters are empty seams. |
@@ -80,7 +82,8 @@ Use two terminals.
 npm run dev
 ```
 - Caller: <http://localhost:5173/> — allow the microphone, press **Help**, then speak (try
-  "there is a fire in my kitchen") or play a sound. Use Chrome or Safari for speech.
+  "there is a fire in my kitchen") or play a sound. Use Chrome or Safari for speech. Or tap
+  **Turn on voice trigger** and say "Help, there is a fire in my kitchen".
 - Responder: <http://localhost:5173/dashboard> — open it first; watch the report arrive,
   then confirm, reject, or (in the Triage column) send it to a service.
 - Add `?chunkMs=2000` to the caller URL for a 12-second run instead of 60 seconds.

@@ -62,6 +62,7 @@ interface RecognitionLike {
   onerror: ((e: { error: string }) => void) | null;
   start(): void;
   stop(): void;
+  abort?(): void;
 }
 type RecognitionCtor = new () => RecognitionLike;
 
@@ -147,4 +148,106 @@ export function startSpeech(lang: string = navigator.language || "en-US"): Speec
       }
     },
   };
+}
+
+// ---- Voice trigger ("Help" as a wake word) ----
+//
+// Whole word only, so "helpful" or "helped" do not start a capture. Ordinary sentences
+// like "can you help me" will; a false alarm costs less than a missed emergency, and a
+// human confirms every dispatch.
+const WAKE_WORD = /\bhelp\b/i;
+
+// The text from the wake word onward ("help there's a fire"), or null if it was not said.
+// Keeping the words after "help" means the first chunk does not lose them.
+export function findWakeWord(text: string): string | null {
+  const match = WAKE_WORD.exec(text);
+  return match ? text.slice(match.index).trim() : null;
+}
+
+export interface WakeListener {
+  stop(): void;
+}
+
+const WAKE_RETRY_MIN_MS = 250;
+const WAKE_RETRY_MAX_MS = 5_000;
+const WAKE_HEALTHY_SESSION_MS = 3_000;
+
+// Listens until "help" is heard, then stops itself and calls onWake with what was said.
+// Unlike a capture session it keeps restarting through long silences (that is the normal
+// idle case). onUnavailable fires if recognition cannot work at all (e.g. permission denied).
+export function listenForWakeWord(
+  onWake: (heard: string) => void,
+  onUnavailable: () => void,
+  lang: string = navigator.language || "en-US",
+): WakeListener | null {
+  const Ctor = recognitionCtor();
+  if (!Ctor) return null;
+
+  const recognition = new Ctor();
+  recognition.continuous = true;
+  recognition.interimResults = true; // interim results trigger faster than final ones
+  recognition.lang = lang;
+
+  let stopped = false;
+  let retryMs = WAKE_RETRY_MIN_MS;
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const halt = (): void => {
+    stopped = true;
+    if (retryTimer) clearTimeout(retryTimer);
+    try {
+      // abort() releases the recognizer immediately, so a capture session can start.
+      if (recognition.abort) recognition.abort();
+      else recognition.stop();
+    } catch {
+      // already stopped
+    }
+  };
+
+  recognition.onresult = (event) => {
+    if (stopped) return;
+    retryMs = WAKE_RETRY_MIN_MS;
+    const text = Array.from(event.results, (r) => r[0].transcript).join(" ");
+    const heard = findWakeWord(text);
+    if (heard !== null) {
+      halt();
+      onWake(heard);
+    }
+  };
+  recognition.onerror = (event) => {
+    if (FATAL_ERRORS.has(event.error) && !stopped) {
+      halt();
+      onUnavailable();
+    }
+  };
+  // Recognizers end on their own after silence or network blips; keep listening, backing
+  // off if it keeps failing so a broken service is not hammered.
+  recognition.onend = () => {
+    if (stopped) return;
+    // A session that ran a while just timed out on silence; only quick failures back off.
+    if (Date.now() - startedAt > WAKE_HEALTHY_SESSION_MS) retryMs = WAKE_RETRY_MIN_MS;
+    retryTimer = setTimeout(() => {
+      if (stopped) return;
+      try {
+        begin();
+      } catch {
+        halt();
+        onUnavailable();
+      }
+    }, retryMs);
+    retryMs = Math.min(retryMs * 2, WAKE_RETRY_MAX_MS);
+  };
+
+  let startedAt = 0;
+  const begin = (): void => {
+    startedAt = Date.now();
+    recognition.start();
+  };
+
+  try {
+    begin();
+  } catch {
+    return null;
+  }
+  return { stop: halt };
 }

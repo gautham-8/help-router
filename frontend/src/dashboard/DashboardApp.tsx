@@ -18,6 +18,13 @@ const RESPONDER = "dashboard-demo";
 // Close code the server uses for a missing or wrong dashboard token.
 const POLICY_VIOLATION = 1008;
 
+const STAT_LABEL: Record<QueueName, string> = {
+  triage: "Needs triage",
+  police: "Police pending",
+  fire: "Fire pending",
+  medical: "Medical pending",
+};
+
 const CONNECTION_LABEL: Record<Connection, string> = {
   connecting: "Connecting…",
   live: "Live",
@@ -94,17 +101,40 @@ export function DashboardApp(): JSX.Element {
     }
   }
 
+  const pending = (name: QueueName): number =>
+    queues[name].filter((e) => !e.dispatch.confirmed && !e.dispatch.rejected).length;
+
   return (
     <main className="dashboard">
-      <header>
-        <h1>Dispatch Dashboard</h1>
-        <span className={`conn ${connection === "live" ? "on" : "off"}`} role="status">
-          {CONNECTION_LABEL[connection]}
-        </span>
-        <p className="demo-banner" role="note">
+      <header className="dash-head">
+        <div className="dash-title">
+          <span className="brand">
+            <span className="brand-mark" aria-hidden="true" />
+            Help Router
+          </span>
+          <h1>Dispatch</h1>
+        </div>
+        <p className="notice notice-inline" role="note">
           Demo only. No real emergency service is contacted.
         </p>
+        <span className={`conn conn-${connection}`} role="status">
+          <span className="conn-dot" aria-hidden="true" />
+          {CONNECTION_LABEL[connection]}
+        </span>
       </header>
+
+      <ul className="stats" aria-label="Awaiting a decision">
+        {ALL_QUEUES.map((name) => (
+          <li key={name} className={`stat stat-${name}`}>
+            <span className="stat-value">{pending(name)}</span>
+            <span className="stat-label">
+              <span className={`svc-dot svc-${name}`} aria-hidden="true" />
+              {STAT_LABEL[name]}
+            </span>
+          </li>
+        ))}
+      </ul>
+
       {connection === "unauthorized" && (
         <p className="error" role="alert">
           This dashboard needs an access token. Open it as /dashboard?token=…

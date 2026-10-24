@@ -23,11 +23,14 @@ function describe(chunk: HeardChunk): string {
 export function HeardPanel({ chunks }: { chunks: HeardChunk[] }): JSX.Element | null {
   if (chunks.length === 0) return null;
   return (
-    <section className="heard" aria-label="What the app heard">
-      <h2>What we heard</h2>
-      <ol>
+    <section className="card-surface heard" aria-label="What the app heard">
+      <h2 className="section-title">What we heard</h2>
+      <ol className="timeline">
         {chunks.map((c) => (
-          <li key={c.index}>{describe(c)}</li>
+          <li key={c.index}>
+            <span className="timeline-dot" aria-hidden="true" />
+            <span className="timeline-text">{describe(c)}</span>
+          </li>
         ))}
       </ol>
     </section>

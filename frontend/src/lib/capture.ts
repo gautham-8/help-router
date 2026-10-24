@@ -77,28 +77,39 @@ export function pickMimeType(): string | undefined {
   return MIME_CANDIDATES.find((type) => MediaRecorder.isTypeSupported(type));
 }
 
+// Controls for a running capture.
+export interface CaptureControl {
+  // Stop early but keep what was captured: the chunk in progress is emitted (shorter
+  // than usual), then onDone fires as if the window had closed.
+  finish(): void;
+  // Abandon: no further chunks, no onDone. Releases the microphone.
+  cancel(): void;
+}
+
 // Records `count` consecutive chunks of `chunkMs` each. A fresh MediaRecorder is used
 // per chunk so every blob is a complete, independently decodable audio file (timesliced
 // chunks after the first have no container header and cannot be decoded alone).
-// Returns a canceller that stops recording and releases the microphone.
 export function recordInChunks(
   stream: MediaStream,
   chunkMs: number,
   count: number,
   onChunk: (blob: Blob, index: number) => void,
   onDone: () => void,
-): () => void {
+): CaptureControl {
   const mimeType = pickMimeType();
   let index = 0;
   let cancelled = false;
+  let finishing = false;
+  let done = false;
   let current: MediaRecorder | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const releaseMic = (): void => stream.getTracks().forEach((t) => t.stop());
 
   const next = (): void => {
-    if (cancelled) return;
-    if (index >= count) {
+    if (cancelled || done) return;
+    if (index >= count || finishing) {
+      done = true;
       releaseMic();
       onDone();
       return;
@@ -123,11 +134,21 @@ export function recordInChunks(
 
   next();
 
-  return () => {
-    cancelled = true;
-    clearTimeout(timer);
-    if (current && current.state !== "inactive") current.stop();
-    releaseMic();
+  return {
+    finish: () => {
+      if (cancelled || finishing || done) return;
+      finishing = true;
+      clearTimeout(timer);
+      // Stopping the recorder emits the partial chunk via onstop, which then ends.
+      if (current && current.state !== "inactive") current.stop();
+      else next();
+    },
+    cancel: () => {
+      cancelled = true;
+      clearTimeout(timer);
+      if (current && current.state !== "inactive") current.stop();
+      releaseMic();
+    },
   };
 }
 
@@ -138,17 +159,32 @@ export function scheduleChunks(
   count: number,
   onChunk: (index: number) => void,
   onDone: () => void,
-): () => void {
+): CaptureControl {
   let index = 0;
+  let done = false;
+  const end = (): void => {
+    done = true;
+    clearInterval(timer);
+    onDone();
+  };
   const timer = setInterval(() => {
     onChunk(index);
     index += 1;
-    if (index >= count) {
-      clearInterval(timer);
-      onDone();
-    }
+    if (index >= count) end();
   }, chunkMs);
-  return () => clearInterval(timer);
+  return {
+    // Like a real recording, the chunk in progress still counts.
+    finish: () => {
+      if (done) return;
+      onChunk(index);
+      index += 1;
+      end();
+    },
+    cancel: () => {
+      done = true;
+      clearInterval(timer);
+    },
+  };
 }
 
 // Base64 (no data-URL prefix) of a blob, for the JSON capture protocol.
