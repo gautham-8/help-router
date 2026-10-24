@@ -138,10 +138,10 @@ the flat weight, once per pattern per chunk.
 | event `explosion` | fire | +0.5 |
 | keyword fire/smoke/burning/flames | fire | +0.4 |
 | event `scream` | medical | +0.4 |
-| keyword hurt/bleeding/unconscious/injured/ambulance/medic | medical | +0.5 |
+| keyword hurt/bleeding/blood/wound/bullet/shot/unconscious/injured/ambulance/medic | medical | +0.5 |
 | keyword crash/accident/collision | medical | +0.3 |
 | event `glass_breaking` | police | +0.4 |
-| keyword break-in/breaking in/attacker/gun/robbery/stolen/intruder/police | police | +0.5 |
+| keyword break-in/breaking in/attacker/gun/bullet/shot/shooting/robbery/stolen/intruder/police | police | +0.5 |
 | event `siren`, `alarm_generic` | (context only, no direct add) | 0 |
 
 Rules, applied per chunk in this order:

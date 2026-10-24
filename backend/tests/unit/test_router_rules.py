@@ -27,6 +27,18 @@ def test_injury_keywords_route_medical() -> None:
     assert "medical" in decision.services
 
 
+def test_blood_alone_routes_medical() -> None:
+    decision = router.route("Blood blood blood", [], None, "provisional")
+    assert "medical" in decision.services
+    assert not decision.needs_attention
+
+
+def test_bullet_wound_routes_medical_and_police() -> None:
+    text = "I see a person with a bullet in his chest I see a person with a bullet"
+    decision = router.route(text, [], None, "provisional")
+    assert {"medical", "police"} <= set(decision.services)
+
+
 def test_multi_service_fans_out() -> None:
     events = [
         AudioEvent(kind="explosion", confidence=0.9),

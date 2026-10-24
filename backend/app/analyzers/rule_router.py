@@ -45,16 +45,18 @@ _KEYWORDS: list[tuple[re.Pattern[str], Service, float]] = [
     (re.compile(r"\b(?:fires?|smoke|burning|burnt|flames?)\b"), "fire", 0.4),
     (
         re.compile(
-            r"\b(?:hurt|bleeding|unconscious|injured|injuries|not breathing|heart attack"
-            r"|ambulances?|medics?)\b"
+            r"\b(?:hurt|bleed(?:s|ing)?|blood|bloody|unconscious|unresponsive|injured"
+            r"|injuries|wound(?:s|ed)?|bullets?|shot|stabbed|not breathing|heart attack"
+            r"|chest pain|overdos(?:e|ed)|ambulances?|medics?)\b"
         ),
         "medical",
         0.5,
     ),
     (
         re.compile(
-            r"\b(?:break[- ]?in|breaking in|broke in|attacker|guns?|gunshots?|robbery"
-            r"|robbed|stolen|intruder|stabbed|police)\b"
+            r"\b(?:break[- ]?in|breaking in|broke in|attacker|guns?|gunshots?|bullets?"
+            r"|shot|shots fired|shooting|shooter|robbery|robbed|stolen|intruder|stabbed"
+            r"|police)\b"
         ),
         "police",
         0.5,
