@@ -52,6 +52,25 @@ def test_vocabulary_is_large() -> None:
     assert total >= 300
 
 
+def test_gunshot_victim_routes_medical_and_police() -> None:
+    # A gunshot is both a crime and an injury — the victim needs an ambulance.
+    for text in ["he got shot", "someone shot him"]:
+        services = router.route(text, [], None, "provisional").services
+        assert "police" in services, text
+        assert "medical" in services, text
+
+
+def test_negation_window_counts_digits() -> None:
+    # Digits now consume negation-window slots, so a number between a stray "no" and a
+    # keyword pushes the negation out of range instead of being invisible to the window.
+    # "no one called 911 the house is on fire" — "no" is far from "fire"; it routes.
+    assert "fire" in router.route(
+        "no one called 911 the house is on fire", [], None, "provisional"
+    ).services
+    # a genuine adjacent negation must still suppress
+    assert "fire" not in router.route("there is no fire", [], None, "provisional").services
+
+
 def test_smoke_alarm_routes_fire() -> None:
     events = [AudioEvent(kind="smoke_alarm", confidence=0.95)]
     decision = router.route("help there's smoke", events, None, "provisional")

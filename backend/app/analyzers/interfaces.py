@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
-from app.domain.models import AudioEvent, RouteDecision, Transcript
+from app.domain.models import AudioEvent, RouteDecision, RouteStatus, Transcript
 
 
 @dataclass(frozen=True)
@@ -61,7 +61,7 @@ class Router(Protocol):
         transcript_text: str,
         events: list[AudioEvent],
         prior: RouteDecision | None,
-        status: str,
+        status: RouteStatus,
     ) -> RouteDecision: ...
 
 

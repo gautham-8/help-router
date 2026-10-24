@@ -10,7 +10,6 @@ service's live dispatch queue, where a human responder confirms every dispatch.
 > **Demo safety:** This project never contacts real emergency services. Every route
 > targets our own dashboard queues, and a human confirms each dispatch.
 
-**Demo video (<3 min):** TODO (public link)
 **Submission & Kiro write-up:** see [HACKATHON.md](./HACKATHON.md)
 
 ## Overview
@@ -136,7 +135,7 @@ hackachusetts-2026/
 │   ├── specs/help-capture-and-routing/   # requirements.md, design.md, tasks.md
 │   ├── steering/                         # product.md, tech.md, structure.md
 │   ├── hooks/                            # guard-kiro-tracked, backend-tests-on-save
-│   └── settings/                         # mcp.json (configure via Kiro MCP UI)
+│   └── settings/                         # cli.json (no mcp.json — no MCP servers used)
 ├── backend/                              # FastAPI + analyzer seam + tests
 ├── frontend/                             # Vite + React caller page and dashboard
 ├── .env.example
@@ -154,5 +153,5 @@ analyzer seam intact (no vendor SDKs in routing/dispatch), keep the scripted `mo
 deterministic, and update `HACKATHON.md` §3.8 as Kiro features are used.
 
 ## License
-TODO: choose a license (e.g. MIT) and record third-party licenses in
-[HACKATHON.md](./HACKATHON.md) §4.
+Released under the **MIT License** — see [`LICENSE`](./LICENSE). Third-party components
+and their licenses are recorded in [HACKATHON.md](./HACKATHON.md) §4.

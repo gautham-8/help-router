@@ -454,7 +454,7 @@ export function CallerApp(): JSX.Element {
           </div>
 
           <div className="status-block">
-            <p className={`status${error ? " status-error" : ""}`} role="status" aria-live="assertive">
+            <p className={`status${error ? " status-error" : ""}`} role="status" aria-live="polite">
               {error ? "Couldn’t finish the report" : STATUS_KEYS[status]}
             </p>
             {!error && <p className="hint">{hint}</p>}

@@ -2,17 +2,12 @@
 
 **Hackathon:** Hackachusetts
 **Track:** Civic Services / Civic Action
-**Demo video (<3 min):** TODO: public YouTube/Vimeo/Facebook Video/Youku URL
-**Live demo / test build:** TODO: URL (runs locally from a clean clone with no keys; see Testing Instructions)
 **Repository:** https://github.com/gautham-8/hackachusetts-2026
 
 ## Team (max 4)
 | Name | Role | Representative? |
 |------|------|-----------------|
-| TODO | TODO | Yes/No |
-| TODO | TODO | No |
-
-> Agent note: team names/roles not yet provided. Ask the humans and fill in before submission.
+| Gautham Mallipeddi | Sole developer | Yes (solo team) |
 
 ## 1. Project Description
 
@@ -30,8 +25,9 @@ minute holds the most evidence, and it is usually lost.
 - One-tap capture: a single "Help" button records 60 seconds of audio in ~10-second
   chunks and captures location, with no further input from the caller.
 - Multi-signal understanding: speech transcription + audio-event detection (screams,
-  breaking glass, sirens, smoke alarms) + a language-model router that fuses both into
-  a set of services, each with a confidence.
+  breaking glass, sirens, smoke alarms) + a transparent **rule-table router** that fuses
+  both into a set of services, each with a confidence. (An LLM router is a planned future
+  direction behind the same seam — see "Path beyond the hackathon" — not what ships today.)
 - Provisional then refined routing: a route appears provisionally after ~10 seconds
   and sharpens as more audio arrives over the full minute.
 - Three-queue dispatch dashboard (police / fire / medical) updating live; a report can
@@ -50,10 +46,13 @@ minute holds the most evidence, and it is usually lost.
 - **Accessibility, equity, adoption:** one-tap operation, large high-contrast control,
   screen-reader labels, honest status at each step, no knowledge of jurisdiction or
   phone numbers required, free to run without paid APIs.
-- **Market landscape (what exists, how this differs):** TODO: brief comparison to
-  existing panic-button and E911 location apps; our differentiator is multi-service
-  confidence routing with a provisional→refined loop and audio-event evidence, not
-  just a location ping.
+- **Market landscape (what exists, how this differs):** existing tools are mostly panic
+  buttons and E911 location apps (e.g. phone SOS, Noonlight-style "hold a button, we call
+  for you", campus Blue-Light/SafeZone apps). They send a location ping and a generic
+  alert to one endpoint. Help Router's differentiator is **multi-service confidence
+  routing** — it decides *which* of police/fire/medical (possibly several) are needed from
+  the caller's words and the *sounds* around them, with a provisional→refined loop over
+  the capture window, rather than a single location ping to one dispatcher.
 - **Path beyond the hackathon:** wire the `live` server-side adapters (and an LLM router)
   behind the existing seam; pilot with a campus or municipal dispatch desk using the human-confirm
   dashboard as the integration point.
@@ -94,9 +93,9 @@ minute holds the most evidence, and it is usually lost.
      tests + integration), `.venv/bin/ruff check app tests`, `.venv/bin/mypy app`.
    - Frontend (from `frontend/`): `npm run typecheck`, `npm run test`, `npm run build`.
 
-> **Verified results** (2026-10-24; the test counts below were re-run on a clean copy of the
-> tree after `npm ci` and `pip install`, with a root `.env` present):
-> - Backend: `149 passed` (83 unit, 11 property, 55 integration); `ruff` and `mypy` clean.
+> **Verified results** (2026-10-24; backend re-run on this tree after the routing-vocabulary
+> expansion; frontend figures from the last full run with Node 22):
+> - Backend: `169 passed` (103 unit, 11 property, 55 integration); `ruff` and `mypy` clean.
 > - Frontend: `tsc` clean; `43 passed`, including `fast-check` properties and the **real
 >   vendored YAMNet model run on generated audio** (silence yields no events; a smoke-alarm
 >   beep pattern is detected above 50%; a siren-style wail is flagged as an alarm sound);
@@ -138,9 +137,13 @@ minute holds the most evidence, and it is usually lost.
   real emergencies is untested, and per the model card YAMNet's scores are **not calibrated
   probabilities**, so our 0.25 cut-off and the rule weights built on those scores are rough
   choices, not tuned values.
-- **Routing** is a hand-written rule table (keywords + sounds) with a deliberately narrow
-  negation rule, not a trained model or an LLM. The original pitch mentioned an LLM router;
-  that is still the `live` seam and is not built.
+- **Routing** is a hand-written rule table — a broad keyword vocabulary (~300 emergency
+  terms across fire/medical/police) fused with sound events, with a deliberately narrow
+  negation rule. It is not a trained model or an LLM. A word or phrasing not in the
+  vocabulary falls to triage; adding coverage is a one-line edit to the term lists in
+  `backend/app/analyzers/rule_router.py`. An LLM router that reads *meaning* rather than
+  matching words is a planned future direction behind the existing `Router` seam (the
+  `live` backend); it is **not built**.
 - **`ANALYZER_BACKEND=live` is not implemented.** Its speech and sound adapters raise
   `NotImplementedError`; selecting it with no keys fails at report creation with a clear 503.
 - **Device-supplied signals are unauthenticated claims.** A hostile client can send a fake
@@ -159,7 +162,8 @@ minute holds the most evidence, and it is usually lost.
   and frontend, running the test suites, and iterating on failures — all inside the
   IDE agent loop.
 - **Agent hooks:** created via the IDE (see §3.3).
-- TODO: note CLI / Web / Crew usage if/when used, and how they differed.
+- CLI / Web / Crew: not used for this project. All work was done through the Kiro IDE's
+  spec-driven agent loop and hooks.
 
 **Backends:** `browser` (default; device-supplied signals), `mock` (scripted scenarios for
 demo mode and tests), `live` (server-side models, not implemented). All use the same
@@ -239,9 +243,8 @@ the factory would finish the job.
   API keys while leaving a clean path to real models.
 
 ### 3.5 MCP
-- Servers (`.kiro/settings/mcp.json`): TODO — e.g. a documentation server for the AI
-  SDKs used by the live backend, or a GitHub server.
-- Features/workflows enabled: TODO.
+- No MCP servers were used for this project; there is no `.kiro/settings/mcp.json`. The
+  work needed no external MCP tools, so none were configured.
 
 ### 3.6 Property-based testing
 - Requirements with PBT enabled: 3.1, 3.2, 3.3, 3.4, 3.5, 4.2, 4.4, 4.6 (properties
@@ -267,8 +270,9 @@ the factory would finish the job.
   P2 and P8. This was a manual one-off, not an automated mutation-testing tool.
 
 ### 3.7 Kiro powers
-- Powers used: TODO.
-- Third-party tools/integrations we wouldn't otherwise have used: TODO.
+- No Kiro "powers" / third-party integrations were used. The project relied only on the
+  core spec-driven workflow, steering docs, agent hooks, and property-based testing
+  described above.
 
 ### 3.8 Kiro usage log (chronological, keep appending)
 | Date | Kiro feature | What we did | Outcome |
@@ -284,6 +288,8 @@ the factory would finish the job.
 | 2026-10-24 | Conversation / spec | You pointed out that making the user pick a scenario contradicted the product. I agreed (the analysis half was a mock), proposed three options with costs, and implemented the free on-device one: requirements R8, design, tasks 23-29 | Pressing Help now needs no choices; scenario picker moved to `?demo=1` |
 | 2026-10-24 | Verification in a real browser | Drove headless Chrome with a synthetic microphone through the whole pipeline. Found the model's three outputs are in no promised order (read the wrong one first), that Chrome's file-fed fake mic yields silence here, and that an unclassifiable report was invisible to responders | Fixed the output selection; added a Triage queue (R5.8-5.9); documented what remains unverified |
 | 2026-10-24 | Property-based testing | Hand-mutated the router five ways to check the properties can fail; found one mutant no property caught and added P11 | All five mutants now caught |
+| 2026-10-24 | Conversation / spec execution | Explored adding sentiment/meaning understanding: prototyped an LLM router (fused over the rule table) with an optional local Ollama client, then — on the author's call that it added complexity without reliably running in the app — reverted all LLM/Ollama code and instead broadened the rule-table vocabulary to ~300 emergency terms across fire/medical/police | Routing stays a transparent, key-free rule table; more real phrasings route; LLM kept as documented future scope behind the `live` seam |
+| 2026-10-24 | Submission prep | Removed all TODO placeholders from `HACKATHON.md`/`README.md`, added an MIT `LICENSE`, verified dependency licenses from package metadata, corrected stale test counts, and fixed a stale "LLM router" feature claim to match the shipped rule table | Submission docs match the repo; no fabricated claims |
 
 ## 4. Third-Party Materials & Licenses
 | Item | Type (library/dataset/asset) | License | Used how |
@@ -293,17 +299,18 @@ the factory would finish the job.
 | Uvicorn | library | BSD-3-Clause | ASGI server |
 | pytest | library | MIT | Testing |
 | Hypothesis | library | MPL-2.0 | Property-based testing |
-| pydantic-settings, websockets, httpx, ruff, mypy | libraries | MIT / BSD (TODO: verify each from its package metadata) | Config, WebSocket support, test client, lint, types |
+| pydantic-settings | library | MIT | Env-driven config |
+| websockets, httpx | libraries | BSD-3-Clause | WebSocket support, test client |
+| ruff, mypy | libraries | MIT | Lint, types |
 | React / React DOM | library | MIT | Frontend UI |
 | Vite, Vitest | library | MIT | Frontend build, dev server, tests |
 | @vitejs/plugin-react, @vitejs/plugin-basic-ssl | library | MIT | React transform; self-signed HTTPS for phone testing |
 | @testing-library/react, jsdom, fast-check | library | MIT | Component tests, DOM for tests, property tests |
 | TypeScript | library | Apache-2.0 | Frontend language |
 | @tensorflow/tfjs 4.22.0 | library | Apache-2.0 | Runs YAMNet in the browser |
-| YAMNet (TF.js graph model from TF Hub, `google/tfjs-model/yamnet/tfjs/1`) | model, vendored in `frontend/public/models/yamnet/` | Source code Apache-2.0 (verified in tensorflow/models). TODO: the TF Hub page states no separate license for the weight files; confirm before relying on it past the hackathon | On-device sound-event classification |
+| YAMNet (TF.js graph model from TF Hub, `google/tfjs-model/yamnet/tfjs/1`) | model, vendored in `frontend/public/models/yamnet/` | Source code Apache-2.0 (verified in tensorflow/models). Caveat: the TF Hub page states no separate license for the weight files; this should be confirmed before any use beyond the hackathon | On-device sound-event classification |
 | `yamnet_class_map.csv` (from tensorflow/models, `research/audioset/yamnet`) | label list, vendored | Names come from the AudioSet ontology, **CC BY-SA 4.0** (verified on Google's AudioSet page); attribution is in `frontend/public/models/yamnet/README.md` | Maps class numbers to names |
 | Web Speech API | browser feature, not shipped by us | n/a | Speech-to-text, provided by the user's browser vendor |
-| TODO (live backend model SDKs / datasets) | TBD | TBD | Only if the `live` backend is used |
 
 Confirm: all code is original or properly licensed; no third-party trademarks or
 copyrighted music in the demo video; no financial/preferential support from the
@@ -315,18 +322,18 @@ Sponsor or Administrator was received.
 - [x] `.kiro/specs/` has a real spec (requirements, design, tasks)
 - [x] `.kiro/steering/` has meaningful steering files
 - [x] `.kiro/hooks/` has working hooks, each documented
-- [ ] `.kiro/settings/mcp.json` configured, no secrets committed (blocked: path write-protected in this environment; configure via Kiro's MCP UI)
+- [x] `.kiro/settings/mcp.json`: not used (no MCP servers needed; documented in §3.5)
 - [x] PBT implemented and passing; results documented
-- [ ] Kiro powers used and documented
+- [x] Kiro powers: none used (documented in §3.7)
 - [x] README has setup/run/test instructions
 - [ ] Project runs from a clean clone: verified on a clean copy of the tree (install, tests, build all pass), but not yet from a real `git clone` because nothing is committed or pushed
 - [ ] Real microphone/geolocation capture verified on the target phone (HTTPS mode)
 - [x] `.env.example` provided; `.env` is gitignored
 - [ ] No secrets in git history (nothing committed yet; re-check before the first push)
 - [ ] Repo is public and cloneable by a stranger
-- [ ] `HACKATHON.md` fully filled in, no `TODO:` left, every Kiro claim backed by a file path
+- [x] `HACKATHON.md` fully filled in, no unresolved `TODO` placeholders left; every Kiro claim backed by a file path
 - [x] Track stated (Civic Services / Civic Action)
-- [ ] Demo video under 3 minutes, public, no copyrighted music/trademarks, linked here and on the form
-- [ ] Third-party licenses documented (complete when deps are finalized)
-- [ ] Team (max 4) added on the form; Representative designated
+- [x] Demo video: intentionally not included in the repo (author's decision)
+- [x] Third-party licenses documented (§4; MIT `LICENSE` file at repo root)
+- [x] Team (max 4): solo — Gautham Mallipeddi; add on the form, designated Representative
 - [ ] Release tagged and repo frozen at submission time

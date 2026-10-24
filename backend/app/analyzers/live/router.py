@@ -9,7 +9,7 @@ upgrade.
 from __future__ import annotations
 
 from app.analyzers.rule_router import RuleRouter
-from app.domain.models import AudioEvent, RouteDecision
+from app.domain.models import AudioEvent, RouteDecision, RouteStatus
 
 
 class LiveRouter:
@@ -34,6 +34,6 @@ class LiveRouter:
         transcript_text: str,
         events: list[AudioEvent],
         prior: RouteDecision | None,
-        status: str = "provisional",
+        status: RouteStatus = "provisional",
     ) -> RouteDecision:
         return self._fallback.route(transcript_text, events, prior, status)

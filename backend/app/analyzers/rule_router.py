@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import re
 
-from app.domain.models import ALL_SERVICES, AudioEvent, RouteDecision, Service
+from app.domain.models import ALL_SERVICES, AudioEvent, RouteDecision, RouteStatus, Service
 
 # Event -> (service, weight). A weight of 0 means "context only, no direct add".
 _EVENT_WEIGHTS: dict[str, tuple[Service | None, float]] = {
@@ -82,6 +82,7 @@ _MEDICAL_TERMS: list[str] = [
     "broken leg", "broken arm", "fracture", "compound fracture", "head injury",
     "concussion", "internal bleeding", "bruised badly", "impaled",
     "bullet", "bullets", "bullet wound", "gunshot wound", "shot in the", "been shot",
+    "shot", "got shot", "shot him", "shot her", "shot me",
     "stab wound", "knife wound",
     # breathing / cardiac / collapse
     "not breathing", "can't breathe", "cant breathe", "trouble breathing",
@@ -163,7 +164,7 @@ _KEYWORDS: list[tuple[re.Pattern[str], Service, float]] = [
     (_compile_terms(_CRASH_TERMS), "medical", 0.3),
 ]
 
-_WORD = re.compile(r"[a-z']+")
+_WORD = re.compile(r"[a-z0-9']+")
 # Negation only reaches back within a clause: punctuation or these words end it.
 _CLAUSE_BREAK = re.compile(r"[.,;:!?]|\b(?:but|and|then|so)\b")
 _NEGATION_WINDOW = 3
@@ -237,7 +238,7 @@ class RuleRouter:
         transcript_text: str,
         events: list[AudioEvent],
         prior: RouteDecision | None,
-        status: str = "provisional",
+        status: RouteStatus = "provisional",
     ) -> RouteDecision:
         # 1. Carry the prior forward, decayed.
         scores: dict[Service, float] = {}

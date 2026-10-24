@@ -129,12 +129,18 @@ export function QueueColumn({ service, entries, onConfirm, onReject, onAssign }:
                     key={s}
                     type="button"
                     className={`btn btn-assign assign-${s}`}
+                    aria-label={`Send report ${e.report_id} to ${LABEL[s]}`}
                     onClick={() => onAssign?.(e.report_id, s)}
                   >
                     Send to {LABEL[s]}
                   </button>
                 ))}
-                <button type="button" className="btn btn-ghost" onClick={() => onReject(service, e.report_id)}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  aria-label={`Dismiss report ${e.report_id}`}
+                  onClick={() => onReject(service, e.report_id)}
+                >
                   Dismiss
                 </button>
               </div>
@@ -145,11 +151,17 @@ export function QueueColumn({ service, entries, onConfirm, onReject, onAssign }:
                 <button
                   type="button"
                   className="btn btn-confirm"
+                  aria-label={`Confirm ${LABEL[service]} dispatch for report ${e.report_id}`}
                   onClick={() => onConfirm(service, e.report_id)}
                 >
                   Confirm dispatch
                 </button>
-                <button type="button" className="btn btn-ghost" onClick={() => onReject(service, e.report_id)}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  aria-label={`Reject report ${e.report_id}`}
+                  onClick={() => onReject(service, e.report_id)}
+                >
                   Reject
                 </button>
               </div>
