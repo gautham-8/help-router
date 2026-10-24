@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Backend tests on save",
+      "trigger": "PostFileSave",
+      "description": "Runs the backend pytest suite (including Hypothesis property tests) with the project venv whenever a backend Python file is saved.",
+      "matcher": "backend/.*\\.py$",
+      "action": {
+        "type": "command",
+        "command": "cd backend && PY=.venv/bin/python; [ -x \"$PY\" ] || PY=python3; \"$PY\" -m pytest -q 2>&1 | tail -n 20",
+        "timeout": 120
+      }
+    }
+  ]
+}

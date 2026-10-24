@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Guard .kiro is tracked",
+      "trigger": "PreToolUse",
+      "description": "Blocks file writes whenever .kiro has become gitignored, protecting the hard submission requirement that .kiro stays tracked.",
+      "matcher": "fs_write|str_replace|fs_append",
+      "action": {
+        "type": "command",
+        "command": "if git check-ignore -v .kiro >/dev/null 2>&1; then echo \".kiro is gitignored — Hackachusetts requirement #2 violated. Remove any .kiro entry from .gitignore.\" >&2; exit 2; fi; exit 0",
+        "timeout": 15
+      }
+    }
+  ]
+}
